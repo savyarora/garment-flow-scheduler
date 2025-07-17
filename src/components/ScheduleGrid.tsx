@@ -1,8 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Package, Scissors, Sparkles, ShirtIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Calendar, Package, Scissors, Sparkles, ShirtIcon, Lock, LockOpen, Edit3, Check, X } from 'lucide-react';
 
 interface DailySchedule {
   date: string;
@@ -25,9 +27,18 @@ interface ProcessData {
 
 interface ScheduleGridProps {
   processData: ProcessData[];
+  onProcessUpdate: (processId: string, updates: Partial<ProcessData>) => void;
+  onScheduleUpdate: (processId: string, schedule: DailySchedule[]) => void;
 }
 
-const ScheduleGrid: React.FC<ScheduleGridProps> = ({ processData }) => {
+const ScheduleGrid: React.FC<ScheduleGridProps> = ({ 
+  processData, 
+  onProcessUpdate, 
+  onScheduleUpdate 
+}) => {
+  const [editingCell, setEditingCell] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+
   const getIcon = (iconName: string) => {
     const iconMap = {
       'scissors': Scissors,
@@ -71,12 +82,68 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ processData }) => {
     return 'bg-white';
   };
 
-  const getCellClass = (quantity: number, process: ProcessData) => {
-    if (quantity === 0) return 'bg-gray-50 text-gray-400';
-    if (process.isPrimary) return 'bg-blue-100 text-blue-800 font-semibold';
-    if (process.isFrozen) return 'bg-red-100 text-red-800';
-    if (process.isManualOverride) return 'bg-orange-100 text-orange-800';
-    return 'bg-green-50 text-green-800';
+  const getCellClass = (quantity: number, process: ProcessData, isEditable: boolean = false) => {
+    let baseClass = 'relative group';
+    if (isEditable) baseClass += ' cursor-pointer hover:bg-gray-100';
+    
+    if (quantity === 0) return `${baseClass} bg-gray-50 text-gray-400`;
+    if (process.isPrimary) return `${baseClass} bg-blue-100 text-blue-800 font-semibold`;
+    if (process.isFrozen) return `${baseClass} bg-red-100 text-red-800`;
+    if (process.isManualOverride) return `${baseClass} bg-orange-100 text-orange-800`;
+    return `${baseClass} bg-green-50 text-green-800`;
+  };
+
+  const handleCellClick = (processId: string, date: string, currentQuantity: number) => {
+    const process = processData.find(p => p.id === processId);
+    if (!process || process.isPrimary) return;
+    
+    const cellKey = `${processId}-${date}`;
+    setEditingCell(cellKey);
+    setEditValue(currentQuantity.toString());
+  };
+
+  const handleCellSave = (processId: string, date: string) => {
+    const process = processData.find(p => p.id === processId);
+    if (!process) return;
+
+    const newQuantity = Math.max(0, parseInt(editValue) || 0);
+    const updatedSchedule = [...process.schedule];
+    
+    const existingIndex = updatedSchedule.findIndex(day => day.date === date);
+    if (existingIndex >= 0) {
+      if (newQuantity === 0) {
+        updatedSchedule.splice(existingIndex, 1);
+      } else {
+        updatedSchedule[existingIndex].quantity = newQuantity;
+      }
+    } else if (newQuantity > 0) {
+      updatedSchedule.push({ date, quantity: newQuantity });
+      updatedSchedule.sort((a, b) => a.date.localeCompare(b.date));
+    }
+
+    onScheduleUpdate(processId, updatedSchedule);
+    onProcessUpdate(processId, { isManualOverride: true });
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  const handleCellCancel = () => {
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  const toggleFreeze = (processId: string) => {
+    const process = processData.find(p => p.id === processId);
+    if (!process || process.isPrimary) return;
+    
+    onProcessUpdate(processId, { isFrozen: !process.isFrozen });
+  };
+
+  const resetToAutoSchedule = (processId: string) => {
+    const process = processData.find(p => p.id === processId);
+    if (!process || process.isPrimary) return;
+    
+    onProcessUpdate(processId, { isManualOverride: false });
   };
 
   return (
@@ -107,7 +174,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ processData }) => {
             {/* Header Row */}
             <thead>
               <tr className="bg-gray-100">
-                <th className="border border-gray-300 p-3 text-left font-semibold min-w-[200px]">
+                <th className="border border-gray-300 p-3 text-left font-semibold min-w-[250px]">
                   Process
                 </th>
                 {allDates.map(date => (
@@ -129,7 +196,7 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ processData }) => {
                     <td className="border border-gray-300 p-3">
                       <div className="flex items-center gap-2">
                         {getIcon(process.icon)}
-                        <div>
+                        <div className="flex-1">
                           <div className="font-medium flex items-center gap-2">
                             {process.processName}
                             {process.isPrimary && (
@@ -152,22 +219,91 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({ processData }) => {
                             Offset: {process.offsetDays > 0 ? `+${process.offsetDays}` : process.offsetDays} days
                           </div>
                         </div>
+                        {!process.isPrimary && (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => toggleFreeze(process.id)}
+                              className="h-6 w-6 p-0"
+                              title={process.isFrozen ? 'Unfreeze schedule' : 'Freeze schedule'}
+                            >
+                              {process.isFrozen ? 
+                                <Lock className="h-3 w-3 text-red-500" /> : 
+                                <LockOpen className="h-3 w-3 text-gray-500" />
+                              }
+                            </Button>
+                            {process.isManualOverride && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => resetToAutoSchedule(process.id)}
+                                className="h-6 w-6 p-0 text-blue-500"
+                                title="Reset to auto schedule"
+                              >
+                                ↻
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </td>
                     {allDates.map(date => {
                       const quantity = getQuantityForDate(process, date);
+                      const cellKey = `${process.id}-${date}`;
+                      const isEditing = editingCell === cellKey;
+                      const isEditable = !process.isPrimary && !process.isFrozen;
+                      
                       return (
                         <td 
                           key={date} 
-                          className={`border border-gray-300 p-2 text-center ${getCellClass(quantity, process)}`}
+                          className={`border border-gray-300 p-2 text-center ${getCellClass(quantity, process, isEditable)}`}
+                          onClick={() => isEditable && !isEditing ? handleCellClick(process.id, date, quantity) : undefined}
                         >
-                          {quantity > 0 ? (
-                            <div>
-                              <div className="font-medium">{quantity}</div>
-                              <div className="text-xs">pcs</div>
+                          {isEditing ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="h-6 w-16 text-xs"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') handleCellSave(process.id, date);
+                                  if (e.key === 'Escape') handleCellCancel();
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleCellSave(process.id, date)}
+                                className="h-4 w-4 p-0"
+                              >
+                                <Check className="h-2 w-2" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleCellCancel}
+                                className="h-4 w-4 p-0"
+                              >
+                                <X className="h-2 w-2" />
+                              </Button>
                             </div>
                           ) : (
-                            <div className="text-gray-400">-</div>
+                            <div>
+                              {quantity > 0 ? (
+                                <div>
+                                  <div className="font-medium">{quantity}</div>
+                                  <div className="text-xs">pcs</div>
+                                </div>
+                              ) : (
+                                <div className="text-gray-400">-</div>
+                              )}
+                              {isEditable && quantity > 0 && (
+                                <Edit3 className="h-2 w-2 absolute top-1 right-1 opacity-0 group-hover:opacity-50" />
+                              )}
+                            </div>
                           )}
                         </td>
                       );

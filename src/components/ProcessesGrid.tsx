@@ -266,6 +266,26 @@ const ProcessesGrid: React.FC = () => {
     }
   };
 
+  const handleProcessUpdate = (processId: string, updates: Partial<ProcessData>) => {
+    setProcessData(prevData =>
+      prevData.map(process =>
+        process.id === processId
+          ? { ...process, ...updates }
+          : process
+      )
+    );
+  };
+
+  const handleScheduleUpdate = (processId: string, schedule: DailySchedule[]) => {
+    setProcessData(prevData =>
+      prevData.map(process =>
+        process.id === processId
+          ? { ...process, schedule }
+          : process
+      )
+    );
+  };
+
   const columnDefs: ColDef[] = [
     {
       headerName: 'Process',
@@ -464,7 +484,11 @@ const ProcessesGrid: React.FC = () => {
       </Card>
 
       {/* Schedule Grid Visualization */}
-      <ScheduleGrid processData={processData} />
+      <ScheduleGrid 
+        processData={processData} 
+        onProcessUpdate={handleProcessUpdate}
+        onScheduleUpdate={handleScheduleUpdate}
+      />
 
       {/* Main Grid */}
       <Card>
