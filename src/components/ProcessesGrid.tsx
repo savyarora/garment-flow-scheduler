@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { ColDef, GridOptions } from 'ag-grid-community';
+import { ColDef, GridOptions, ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import { Calendar, Clock, Package, Scissors, Sparkles, ShirtIcon, Lock, LockOpen, Edit3 } from 'lucide-react';
@@ -10,6 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+// Register AG Grid modules
+ModuleRegistry.registerModules([AllCommunityModule]);
 
 interface DailySchedule {
   date: string;

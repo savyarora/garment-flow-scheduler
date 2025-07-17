@@ -115,6 +115,15 @@ All colors MUST be HSL.
   background-color: rgba(59, 130, 246, 0.1);
 }
 
+.ag-theme-alpine .ag-row.frozen-process {
+  background-color: rgba(239, 68, 68, 0.03);
+  border-left: 4px solid rgb(239, 68, 68);
+}
+
+.ag-theme-alpine .ag-row.frozen-process:hover {
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
 .ag-theme-alpine .ag-header {
   background-color: rgb(248, 250, 252);
   border-bottom: 2px solid rgb(226, 232, 240);
