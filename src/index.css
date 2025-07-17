@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -102,4 +103,23 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* AG Grid custom styles */
+.ag-theme-alpine .ag-row.primary-process {
+  background-color: rgba(59, 130, 246, 0.05);
+  border-left: 4px solid rgb(59, 130, 246);
+}
+
+.ag-theme-alpine .ag-row.primary-process:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.ag-theme-alpine .ag-header {
+  background-color: rgb(248, 250, 252);
+  border-bottom: 2px solid rgb(226, 232, 240);
+}
+
+.ag-theme-alpine .ag-row:hover {
+  background-color: rgba(0, 0, 0, 0.02);
 }
