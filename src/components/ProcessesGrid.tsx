@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import ScheduleGrid from './ScheduleGrid';
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -461,6 +462,9 @@ const ProcessesGrid: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Schedule Grid Visualization */}
+      <ScheduleGrid processData={processData} />
 
       {/* Main Grid */}
       <Card>
