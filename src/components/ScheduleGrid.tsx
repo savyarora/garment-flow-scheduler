@@ -108,10 +108,15 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
 
     let newQuantity = Math.max(0, parseInt(editValue) || 0);
     
-    // For non-primary processes, cap quantity to not exceed primary process quantity
+    // For non-primary processes, cap quantity based on primary process quantity on offset-adjusted date
     const primaryProcess = processData.find(p => p.isPrimary);
     if (primaryProcess && !process.isPrimary) {
-      const primaryQuantity = getQuantityForDate(primaryProcess, date);
+      // Calculate the primary process date by subtracting the offset
+      const primaryDate = new Date(date);
+      primaryDate.setDate(primaryDate.getDate() - process.offsetDays);
+      const primaryDateString = primaryDate.toISOString().split('T')[0];
+      
+      const primaryQuantity = getQuantityForDate(primaryProcess, primaryDateString);
       newQuantity = Math.min(newQuantity, primaryQuantity);
     }
     
