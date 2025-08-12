@@ -108,11 +108,11 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
 
     let newQuantity = Math.max(0, parseInt(editValue) || 0);
     
-    // For non-primary processes, set quantity equal to primary process quantity
+    // For non-primary processes, cap quantity to not exceed primary process quantity
     const primaryProcess = processData.find(p => p.isPrimary);
     if (primaryProcess && !process.isPrimary) {
       const primaryQuantity = getQuantityForDate(primaryProcess, date);
-      newQuantity = primaryQuantity;
+      newQuantity = Math.min(newQuantity, primaryQuantity);
     }
     
     const updatedSchedule = [...process.schedule];
