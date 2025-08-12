@@ -108,33 +108,87 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
 
     let newQuantity = Math.max(0, parseInt(editValue) || 0);
     
-    // For non-primary processes, cap quantity based on primary process quantity on offset-adjusted date
+    // For non-primary processes, implement redistribution logic
     const primaryProcess = processData.find(p => p.isPrimary);
     if (primaryProcess && !process.isPrimary) {
-      // Calculate the primary process date by subtracting the offset
-      const primaryDate = new Date(date);
-      primaryDate.setDate(primaryDate.getDate() - process.offsetDays);
-      const primaryDateString = primaryDate.toISOString().split('T')[0];
+      // Calculate total target quantity from primary process
+      const totalTargetQuantity = primaryProcess.schedule.reduce((sum, day) => sum + day.quantity, 0);
       
-      const primaryQuantity = getQuantityForDate(primaryProcess, primaryDateString);
-      newQuantity = Math.min(newQuantity, primaryQuantity);
-    }
-    
-    const updatedSchedule = [...process.schedule];
-    
-    const existingIndex = updatedSchedule.findIndex(day => day.date === date);
-    if (existingIndex >= 0) {
-      if (newQuantity === 0) {
-        updatedSchedule.splice(existingIndex, 1);
-      } else {
-        updatedSchedule[existingIndex].quantity = newQuantity;
+      // Get current total (excluding the cell being edited)
+      const currentTotal = process.schedule
+        .filter(day => day.date !== date)
+        .reduce((sum, day) => sum + day.quantity, 0);
+      
+      // Cap new quantity to not exceed remaining target
+      const maxAllowedQuantity = totalTargetQuantity - currentTotal;
+      newQuantity = Math.min(newQuantity, maxAllowedQuantity);
+      
+      // Calculate excess that needs to be redistributed
+      const currentCellQuantity = getQuantityForDate(process, date);
+      const excess = newQuantity - currentCellQuantity;
+      
+      // Create updated schedule with the new quantity
+      let updatedSchedule = [...process.schedule];
+      
+      // Update or add the edited cell
+      const existingIndex = updatedSchedule.findIndex(day => day.date === date);
+      if (existingIndex >= 0) {
+        if (newQuantity === 0) {
+          updatedSchedule.splice(existingIndex, 1);
+        } else {
+          updatedSchedule[existingIndex].quantity = newQuantity;
+        }
+      } else if (newQuantity > 0) {
+        updatedSchedule.push({ date, quantity: newQuantity });
+        updatedSchedule.sort((a, b) => a.date.localeCompare(b.date));
       }
-    } else if (newQuantity > 0) {
-      updatedSchedule.push({ date, quantity: newQuantity });
-      updatedSchedule.sort((a, b) => a.date.localeCompare(b.date));
+      
+      // If there's excess, redistribute by reducing other cells
+      if (excess > 0) {
+        let remainingExcess = excess;
+        
+        // Sort other schedule items by date to redistribute systematically
+        const otherCells = updatedSchedule
+          .filter(day => day.date !== date && day.quantity > 0)
+          .sort((a, b) => a.date.localeCompare(b.date));
+        
+        for (const cell of otherCells) {
+          if (remainingExcess <= 0) break;
+          
+          const reduction = Math.min(cell.quantity, remainingExcess);
+          cell.quantity -= reduction;
+          remainingExcess -= reduction;
+          
+          // Remove cells that become 0
+          if (cell.quantity === 0) {
+            const index = updatedSchedule.findIndex(day => day.date === cell.date);
+            if (index >= 0) {
+              updatedSchedule.splice(index, 1);
+            }
+          }
+        }
+      }
+      
+      onScheduleUpdate(processId, updatedSchedule);
+    } else {
+      // For primary processes, simple update
+      const updatedSchedule = [...process.schedule];
+      
+      const existingIndex = updatedSchedule.findIndex(day => day.date === date);
+      if (existingIndex >= 0) {
+        if (newQuantity === 0) {
+          updatedSchedule.splice(existingIndex, 1);
+        } else {
+          updatedSchedule[existingIndex].quantity = newQuantity;
+        }
+      } else if (newQuantity > 0) {
+        updatedSchedule.push({ date, quantity: newQuantity });
+        updatedSchedule.sort((a, b) => a.date.localeCompare(b.date));
+      }
+      
+      onScheduleUpdate(processId, updatedSchedule);
     }
-
-    onScheduleUpdate(processId, updatedSchedule);
+    
     onProcessUpdate(processId, { isManualOverride: true });
     setEditingCell(null);
     setEditValue('');
