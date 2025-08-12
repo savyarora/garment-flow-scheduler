@@ -316,31 +316,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                 );
               })}
             </tbody>
-            {/* Totals Row */}
-            <tfoot>
-              <tr className="bg-gray-100 font-semibold">
-                <td className="border border-gray-300 p-3">Daily Totals</td>
-                {allDates.map(date => {
-                  const dailyTotal = processData.reduce((sum, process) => {
-                    return sum + getQuantityForDate(process, date);
-                  }, 0);
-                  return (
-                    <td key={date} className="border border-gray-300 p-2 text-center bg-blue-50">
-                      <div className="font-semibold text-blue-800">{dailyTotal}</div>
-                      <div className="text-xs text-blue-600">pcs</div>
-                    </td>
-                  );
-                })}
-                <td className="border border-gray-300 p-3 text-center bg-blue-100">
-                  <div className="font-bold text-blue-800">
-                    {processData.reduce((sum, process) => {
-                      return sum + process.schedule.reduce((pSum, day) => pSum + day.quantity, 0);
-                    }, 0)}
-                  </div>
-                  <div className="text-xs text-blue-600">total pcs</div>
-                </td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       </CardContent>
