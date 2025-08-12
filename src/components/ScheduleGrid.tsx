@@ -97,13 +97,6 @@ const ScheduleGrid: React.FC<ScheduleGridProps> = ({
     const process = processData.find(p => p.id === processId);
     if (!process || process.isPrimary) return;
     
-    // Only allow editing if primary process has quantity for this date
-    const primaryProcess = processData.find(p => p.isPrimary);
-    if (primaryProcess) {
-      const primaryQuantity = getQuantityForDate(primaryProcess, date);
-      if (primaryQuantity === 0) return; // Don't allow editing if primary has no quantity
-    }
-    
     const cellKey = `${processId}-${date}`;
     setEditingCell(cellKey);
     setEditValue(currentQuantity.toString());
